@@ -77,16 +77,6 @@ def adjMatrix(graph):
 	print("Done! (" + str(round(endtime-starttime,4)) + " seconds)")
 	return matrix
 
-def isDone(sets):
-	val = None
-	for key in sets:
-		if(val == None):
-			val = sets[key]
-		else:
-			if(not val == sets[key]):
-				return False
-	return True
-
 #From previous assignment, using Kruskal's
 #Finds the MST of a complete graph given the euclidian points as vertices.
 #Use Kruskal's Algorithm: https://en.wikipedia.org/wiki/Kruskal%27s_algorithm
@@ -124,7 +114,7 @@ def findMST(g,matrix):
 					sets[key] = setnum
 			tree.append((edge[1],edge[2]))
 			weight+=edge[0]
-			if(isDone(sets)):
+			if(len(tree) == len(g)-1):
 				break
 		progress = int(100*len(tree)/len(g))+1
 		print("Finding MST... "+str(progress),end='\r')
