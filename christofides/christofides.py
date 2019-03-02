@@ -3,7 +3,6 @@ import sys
 import argparse
 import math
 import time
-import numpy as np
 import heapq
 
 #We can assume a complete graph for this program.
@@ -67,36 +66,25 @@ def getdist(v1, v2):
 	dy = v1[1]-v2[1]
 	return int(round(math.sqrt(dx*dx + dy*dy)))
 
-def adj_matrix(graph):
-	print("Building adjacency matrix... ",end='')
-	starttime = time.time()
-	gnodes = len(graph)
-	matrix = np.matrix([[0]*gnodes]*gnodes)
-	for i in range(gnodes):
-		for j in range(i+1,gnodes):
-			matrix[i,j]=matrix[j,i] = getdist(graph[i],graph[j])
-	endtime = time.time()
-	print("Done! ({} seconds)".format(str(round(endtime-starttime,4))))
-	return matrix
-
 #From previous assignment, using Kruskal's
 #Finds the MST of a complete graph given the euclidian points as vertices.
 #Use Kruskal's Algorithm: https://en.wikipedia.org/wiki/Kruskal%27s_algorithm
 # @param g: A graph representation where we are given points as vertices.
 # @return weight: The total weight of the MST.
 # @return tree: A list of edges which make up the MST.
-def findMST(g,matrix):
+def findMST(g):
+	print("Finding MST... ",end='\r')
 	starttime = time.time()
 	# Make a list of all edges, and store them as (dist, v1, v2), and sort them
 	edges = []
 	for v1i in range(len(g)):
 		for v2i in range(v1i+1,len(g)):
-			heapq.heappush(edges,(matrix[v1i,v2i],v1i,v2i))
+			heapq.heappush(edges,(getdist(g[v1i],g[v2i]),v1i,v2i))
 
 	# Set up a dictionary "sets", which assigns a value to each vertex.
 	# This value will become representative of the connected component that each vertex belongs to.
 	# Each vertex will have a unique value to start (as there are no edges yet).
-	sets = np.array([v for v in range(len(g))])
+	sets = [v for v in range(len(g))]
 	tree = []
 	weight = 0
 
@@ -106,13 +94,12 @@ def findMST(g,matrix):
 	while(len(edges)>0):
 		(d,v1,v2) = heapq.heappop(edges)
 		if(not sets[v1] == sets[v2]):
-			#setnum = sets[v1]
-			#setnumchange = sets[v2] 
+			setnum = sets[v1]
+			setnumchange = sets[v2] 
 			# Go through and change all keys connected to the second vertex of this edge.
-			sets[sets==sets[v2]] = sets[v1]
-			""" for key in sets:
-				if(sets[key]==setnumchange):
-					sets[key] = setnum """
+			for i in range(len(g)):
+				if(sets[i]==setnumchange):
+					sets[i] = setnum
 			tree.append((v1,v2))
 			weight+=d
 			if(len(tree) == len(g)-1):
@@ -144,7 +131,7 @@ def getOddDegrees(tree):
 
 #Estimate minimum perfect pairings.
 #For each node, we find the closest node and then remove both as candidates.
-def addPairings(graph,matrix,mst,tree,odds):
+def addPairings(graph,mst,tree,odds):
 	starttime = time.time()
 	startodds = len(odds)
 	while(odds):
@@ -152,8 +139,8 @@ def addPairings(graph,matrix,mst,tree,odds):
 		min = v
 		minlen = float('inf')
 		for node in odds:
-			d = matrix[v,node]
-			#d = getdist(graph[v],graph[node])
+			#d = matrix[v,node]
+			d = getdist(graph[v],graph[node])
 			if(d < minlen):
 				min = node
 				minlen = d
@@ -180,7 +167,7 @@ def delEdge(edges,r1,r2):
 		
 
 #Find eulerian tour
-def findEulerianTour(graph,matrix,mstp,mstpe):
+def findEulerianTour(graph,mstp,mstpe):
 	starttime=time.time()
 	startlen = len(mstpe)
 	start = 0
@@ -206,7 +193,7 @@ def findEulerianTour(graph,matrix,mstp,mstpe):
 	return path
 
 #Removes the duplucate vertices from the tour
-def finalizepath(graph,matrix,tour):
+def finalizepath(graph,tour):
 	cost = 0
 	final = [tour[0]]
 	for node in tour:
@@ -220,13 +207,13 @@ def finalizepath(graph,matrix,tour):
 	return cost,final
 
 # Runs the Christofides algorithm steps.
-def gettsp(graph,matrix):
-	(w, tree) = findMST(graph,matrix) #Find an MST of the graph
+def gettsp(graph):
+	(w, tree) = findMST(graph) #Find an MST of the graph
 	mst = convertToPointRepr(tree) #For convinience, get a adjacency list repr of the mst
 	oddVertices = getOddDegrees(mst) #Get the odd vertices
-	mstPairings, mstPairedEdges = addPairings(graph,matrix,mst,tree,oddVertices) #Returns both the adj list and edges list after adding the perfect pairings to it (this is an estimate, greedy)
-	etour = findEulerianTour(graph,matrix,mstPairings,mstPairedEdges) #Find the eulerian tour of this multigraph
-	finalcost, finalpath = finalizepath(graph,matrix,etour) #remove vertices that were visited multiple times.
+	mstPairings, mstPairedEdges = addPairings(graph,mst,tree,oddVertices) #Returns both the adj list and edges list after adding the perfect pairings to it (this is an estimate, greedy)
+	etour = findEulerianTour(graph,mstPairings,mstPairedEdges) #Find the eulerian tour of this multigraph
+	finalcost, finalpath = finalizepath(graph,etour) #remove vertices that were visited multiple times.
 
 	return finalcost, finalpath
 
@@ -245,10 +232,10 @@ if __name__ == "__main__":
 	cwd = os.getcwd()
 
 	graph = getGraphFromFile(cwd+"/"+wfile)
-	matrix = adj_matrix(graph)
+	#matrix = adj_matrix(graph)
 
 	starttime = time.time()
-	weight, tour = gettsp(graph,matrix)
+	weight, tour = gettsp(graph)
 	endtime = time.time()
 	writeToFile(wfile+".tour",weight,tour)
 
