@@ -3,6 +3,8 @@ import sys
 import argparse
 import math
 import time
+import numpy as np
+import heapq
 
 #We can assume a complete graph for this program.
 #Takes input from a file as described in readme.txt
@@ -61,20 +63,20 @@ def mstrepr(weight,tree):
 # @param v2: The second point as (x,y)
 # @return value: The distance between v1, v2 to the nearest integer.
 def getdist(v1, v2):
-	(x1,y1) = v1
-	(x2,y2) = v2
-	return round(math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2)))
+	dx = v1[0]-v2[0]
+	dy = v1[1]-v2[1]
+	return int(round(math.sqrt(dx*dx + dy*dy)))
 
-def adjMatrix(graph):
+def adj_matrix(graph):
 	print("Building adjacency matrix... ",end='')
 	starttime = time.time()
 	gnodes = len(graph)
-	matrix = [[0]*gnodes for _ in range(gnodes)]
-	for i, v1 in enumerate(graph):
-		for j, v2 in enumerate(graph):
-			matrix[i][j] = getdist(v1,v2)
+	matrix = np.matrix([[0]*gnodes]*gnodes)
+	for i in range(gnodes):
+		for j in range(i+1,gnodes):
+			matrix[i,j]=matrix[j,i] = getdist(graph[i],graph[j])
 	endtime = time.time()
-	print("Done! (" + str(round(endtime-starttime,4)) + " seconds)")
+	print("Done! ({} seconds)".format(str(round(endtime-starttime,4))))
 	return matrix
 
 #From previous assignment, using Kruskal's
@@ -84,42 +86,42 @@ def adjMatrix(graph):
 # @return weight: The total weight of the MST.
 # @return tree: A list of edges which make up the MST.
 def findMST(g,matrix):
+	starttime = time.time()
 	# Make a list of all edges, and store them as (dist, v1, v2), and sort them
 	edges = []
 	for v1i in range(len(g)):
 		for v2i in range(v1i+1,len(g)):
-			edges.append((matrix[v1i][v2i],v1i,v2i))
-			#edges.append((getdist(g[v1i],g[v2i]),v1i,v2i))
-	edges.sort()
+			heapq.heappush(edges,(matrix[v1i,v2i],v1i,v2i))
 
 	# Set up a dictionary "sets", which assigns a value to each vertex.
 	# This value will become representative of the connected component that each vertex belongs to.
 	# Each vertex will have a unique value to start (as there are no edges yet).
-	sets = {}
-	for v in range(len(g)):
-		sets[v] = v
+	sets = np.array([v for v in range(len(g))])
 	tree = []
 	weight = 0
 
 	# Traverse through the sorted list of edges (lowest first)
 	# At each edge, If both vertices are part of different components, then join them.
 	# When joining two components, change all vertices that share that component number and change it to the component number that we merge with. 
-	for edge in edges:
-		if(not sets[edge[1]] == sets[edge[2]]):
-			setnum = sets[edge[1]]
-			setnumchange = sets[edge[2]] 
+	while(len(edges)>0):
+		(d,v1,v2) = heapq.heappop(edges)
+		if(not sets[v1] == sets[v2]):
+			#setnum = sets[v1]
+			#setnumchange = sets[v2] 
 			# Go through and change all keys connected to the second vertex of this edge.
-			for key in sets:
+			sets[sets==sets[v2]] = sets[v1]
+			""" for key in sets:
 				if(sets[key]==setnumchange):
-					sets[key] = setnum
-			tree.append((edge[1],edge[2]))
-			weight+=edge[0]
+					sets[key] = setnum """
+			tree.append((v1,v2))
+			weight+=d
 			if(len(tree) == len(g)-1):
 				break
 		progress = int(100*len(tree)/len(g))+1
 		print("Finding MST... "+str(progress),end='\r')
 
-	print()
+	endtime = time.time()
+	print("Finding MST... Done! ({} seconds)".format(str(round(endtime-starttime,4))))
 	return (weight,tree)
 
 def convertToPointRepr(tree):
@@ -143,13 +145,14 @@ def getOddDegrees(tree):
 #Estimate minimum perfect pairings.
 #For each node, we find the closest node and then remove both as candidates.
 def addPairings(graph,matrix,mst,tree,odds):
+	starttime = time.time()
 	startodds = len(odds)
 	while(odds):
 		(v, edges) = odds.popitem()
 		min = v
 		minlen = float('inf')
 		for node in odds:
-			d = matrix[v][node]
+			d = matrix[v,node]
 			#d = getdist(graph[v],graph[node])
 			if(d < minlen):
 				min = node
@@ -162,7 +165,8 @@ def addPairings(graph,matrix,mst,tree,odds):
 		progress = int(100*(startodds-len(odds))/startodds)
 		print("Finding Pairings... "+str(progress),end='\r')
 
-	print()
+	endtime = time.time()
+	print("Finding Pairings... Done! ({} seconds)".format(str(round(endtime-starttime,4))))
 	return mst, tree
 
 #Deletes an edge between r1,r2
@@ -177,6 +181,7 @@ def delEdge(edges,r1,r2):
 
 #Find eulerian tour
 def findEulerianTour(graph,matrix,mstp,mstpe):
+	starttime=time.time()
 	startlen = len(mstpe)
 	start = 0
 	path = [mstp[start][0]]
@@ -196,7 +201,8 @@ def findEulerianTour(graph,matrix,mstp,mstpe):
 		progress = int(100*(startlen-len(mstpe))/startlen)
 		print("Finding Eulerian Tour... "+str(progress),end='\r')
 
-	print()
+	endtime = time.time()
+	print("Finding Eulerian Tour... Done! ({} seconds)".format(str(round(endtime-starttime,4))))
 	return path
 
 #Removes the duplucate vertices from the tour
@@ -205,12 +211,12 @@ def finalizepath(graph,matrix,tour):
 	final = [tour[0]]
 	for node in tour:
 		if(not node in final): #Only add once
-			#cost+=getdist(graph[node],graph[final[-1]]) #We take the cost from the last node in the final tour to this one
-			cost+=matrix[node][final[-1]]
+			cost+=getdist(graph[node],graph[final[-1]]) #We take the cost from the last node in the final tour to this one
+			#cost+=matrix[node,final[-1]]
 			final.append(node)
-	#cost+=getdist(graph[tour[0]],graph[final[-1]])
-	cost+=matrix[tour[0]][final[-1]]
-	final.append(tour[0])
+	cost+=getdist(graph[tour[0]],graph[final[-1]])
+	#cost+=matrix[tour[0],final[-1]]
+	#final.append(tour[0])
 	return cost,final
 
 # Runs the Christofides algorithm steps.
@@ -227,7 +233,7 @@ def gettsp(graph,matrix):
 def writeToFile(file,weight,tour):
 	s=str(weight)
 	for node in tour:
-		s+="\n"+str(node)
+		s+="\n"+str(node)+' '
 	f = open(file,'w')
 	f.write(s)
 
@@ -239,7 +245,7 @@ if __name__ == "__main__":
 	cwd = os.getcwd()
 
 	graph = getGraphFromFile(cwd+"/"+wfile)
-	matrix = adjMatrix(graph)
+	matrix = adj_matrix(graph)
 
 	starttime = time.time()
 	weight, tour = gettsp(graph,matrix)
