@@ -3,6 +3,7 @@ import sys
 import argparse
 import math
 import time
+import numpy as np
 
 #We can assume a complete graph for this program.
 #Takes input from a file as described in readme.txt
@@ -63,16 +64,16 @@ def mstrepr(weight,tree):
 def getdist(v1, v2):
 	(x1,y1) = v1
 	(x2,y2) = v2
-	return round(math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2)))
+	return int(round(math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))))
 
-def adjMatrix(graph):
+def adj_matrix(graph):
 	print("Building adjacency matrix... ",end='')
 	starttime = time.time()
 	gnodes = len(graph)
-	matrix = [[0]*gnodes for _ in range(gnodes)]
-	for i, v1 in enumerate(graph):
-		for j, v2 in enumerate(graph):
-			matrix[i][j] = getdist(v1,v2)
+	matrix = np.matrix([[0]*gnodes]*gnodes)
+	for i in range(gnodes):
+		for j in range(i+1,gnodes):
+			matrix[i,j]=matrix[j,i] = getdist(graph[i],graph[j])
 	endtime = time.time()
 	print("Done! (" + str(round(endtime-starttime,4)) + " seconds)")
 	return matrix
@@ -88,7 +89,7 @@ def findMST(g,matrix):
 	edges = []
 	for v1i in range(len(g)):
 		for v2i in range(v1i+1,len(g)):
-			edges.append((matrix[v1i][v2i],v1i,v2i))
+			edges.append((matrix[v1i,v2i],v1i,v2i))
 			#edges.append((getdist(g[v1i],g[v2i]),v1i,v2i))
 	edges.sort()
 
@@ -149,7 +150,7 @@ def addPairings(graph,matrix,mst,tree,odds):
 		min = v
 		minlen = float('inf')
 		for node in odds:
-			d = matrix[v][node]
+			d = matrix[v,node]
 			#d = getdist(graph[v],graph[node])
 			if(d < minlen):
 				min = node
@@ -206,10 +207,11 @@ def finalizepath(graph,matrix,tour):
 	for node in tour:
 		if(not node in final): #Only add once
 			#cost+=getdist(graph[node],graph[final[-1]]) #We take the cost from the last node in the final tour to this one
-			cost+=matrix[node][final[-1]]
+			#cost+=matrix[node][final[-1]]
+			cost+=getdist(graph[node],graph[final[-1]])
 			final.append(node)
 	#cost+=getdist(graph[tour[0]],graph[final[-1]])
-	cost+=matrix[tour[0]][final[-1]]
+	cost+=getdist(graph[tour[0]],graph[final[-1]])
 	final.append(tour[0])
 	return cost,final
 
@@ -239,7 +241,7 @@ if __name__ == "__main__":
 	cwd = os.getcwd()
 
 	graph = getGraphFromFile(cwd+"/"+wfile)
-	matrix = adjMatrix(graph)
+	matrix = adj_matrix(graph)
 
 	starttime = time.time()
 	weight, tour = gettsp(graph,matrix)
