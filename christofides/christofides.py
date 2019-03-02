@@ -63,9 +63,9 @@ def mstrepr(weight,tree):
 # @param v2: The second point as (x,y)
 # @return value: The distance between v1, v2 to the nearest integer.
 def getdist(v1, v2):
-	(x1,y1) = v1
-	(x2,y2) = v2
-	return int(round(math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))))
+	dx = v1[0]-v2[0]
+	dy = v1[1]-v2[1]
+	return int(round(math.sqrt(dx*dx + dy*dy)))
 
 def adj_matrix(graph):
 	print("Building adjacency matrix... ",end='')
@@ -211,12 +211,12 @@ def finalizepath(graph,matrix,tour):
 	final = [tour[0]]
 	for node in tour:
 		if(not node in final): #Only add once
-			#cost+=getdist(graph[node],graph[final[-1]]) #We take the cost from the last node in the final tour to this one
-			cost+=matrix[node,final[-1]]
+			cost+=getdist(graph[node],graph[final[-1]]) #We take the cost from the last node in the final tour to this one
+			#cost+=matrix[node,final[-1]]
 			final.append(node)
-	#cost+=getdist(graph[tour[0]],graph[final[-1]])
-	cost+=matrix[tour[0],final[-1]]
-	final.append(tour[0])
+	cost+=getdist(graph[tour[0]],graph[final[-1]])
+	#cost+=matrix[tour[0],final[-1]]
+	#final.append(tour[0])
 	return cost,final
 
 # Runs the Christofides algorithm steps.
@@ -233,7 +233,7 @@ def gettsp(graph,matrix):
 def writeToFile(file,weight,tour):
 	s=str(weight)
 	for node in tour:
-		s+="\n"+str(node)
+		s+="\n"+str(node)+' '
 	f = open(file,'w')
 	f.write(s)
 
