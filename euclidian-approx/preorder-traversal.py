@@ -57,9 +57,9 @@ def mstrepr(weight,tree):
 # @param v2: The second point as (x,y)
 # @return value: The distance between v1, v2 to the nearest integer.
 def getdist(v1, v2):
-	(x1,y1) = v1
-	(x2,y2) = v2
-	return round(math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2)))
+	dx = v1[0]-v2[0]
+	dy = v1[1]-v2[1]
+	return int(round(math.sqrt(dx*dx + dy*dy)))
 
 #Checks to see if all vertices are part of the same component.
 #This acts as a premature end, because in a connected graph, most edges are going to be useless. (time savings)
@@ -130,7 +130,7 @@ def convertToPointRepr(tree):
 
 #We traverse the MST in preorder.
 #root->left->right, where left denotes the closest node to the last one.
-def preorderTraversal(mst):
+def preorderTraversal(mst,graph):
 	curnode = 0
 	visited = []
 	vweight = 0
@@ -153,7 +153,7 @@ def preorderTraversal(mst):
 			(d,node) = n
 			if(not node in visited):
 				backtrack[node] = curnode
-				vweight+=d
+				vweight+=getdist(graph[node],graph[visited[-1]])
 				visited.append(node)
 				curnode = node
 				traversed = True
@@ -165,7 +165,6 @@ def preorderTraversal(mst):
 		progress = int(100*len(visited)/len(graph))
 		print("Running traversal... "+str(progress),end='\r')
 	vweight+=getdist(graph[0],graph[visited[-1]])
-	visited.append(0)
 	print("\n")
 
 	return vweight,visited
@@ -173,7 +172,7 @@ def preorderTraversal(mst):
 def gettsp(graph):
 	(w, tree) = findMST(graph)
 	mst = convertToPointRepr(tree)
-	weight, tour = preorderTraversal(mst)
+	weight, tour = preorderTraversal(mst,graph)
 
 	return weight,tour
 
