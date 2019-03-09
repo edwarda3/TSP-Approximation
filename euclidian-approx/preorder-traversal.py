@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import math
+import time
 
 #We can assume a complete graph for this program.
 #Takes input from a file as described in readme.txt
@@ -185,6 +186,9 @@ if __name__ == "__main__":
 
 	graph = getGraphFromFile(cwd+"/"+wfile)
 
+	starttime=time.time()
 	weight, tour = gettsp(graph)
+	endtime=time.time()
 	print("Weight: "+str(weight))
 	print("Tour: "+str(tour))
+	print("Time: {}".format(endtime-starttime))
