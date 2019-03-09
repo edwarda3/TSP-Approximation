@@ -26,10 +26,25 @@ This problem assumes a complete graph given the vertices, and edge weights are e
 ## Greedy Algorithm:
 Start at some node, and take the shortest path. Runs in O(V^2).
 
+Run using:
+```
+$ python3 greedy/greedy.py <test file>
+```
+
 ## Spanning-Tree Heuristic:
 Build an MST, and traverse that MST in pre-order.
 See: http://demonstrations.wolfram.com/TheTravelingSalesmanProblem4SpanningTreeHeuristic/
 
+Run using:
+```
+$ python3 euclidian-approx/preorder-traversal.py <test file>
+```
+
 ## Christofides Algorithm:
 Builds an MST, finds minimum pairs of odd-degree vertices (approximate), adds those edges of the pairs to the MST for a multigraph. Find an eulerian tour of the multigraph and prune duplicate vertices.
 See: https://en.wikipedia.org/wiki/Christofides_algorithm
+
+Run using:
+```
+$ python3 christofides/christofides.py <test file>
+```
